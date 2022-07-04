@@ -1,0 +1,6 @@
+# in alpine add path to this map to extended_keymaps in /etc/conf.d/loadkeys
+# busybox loadkmap can't be used for this, since it doesn't handle key combos
+
+keycode 125 = CtrlL_Lock # lwin to caps
+keycode 127 = Control # rmenu to ctrl
+alt keycode 36 = Meta_Delete # M-h to M-del (same as C-M-h)
