@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -eu
+
+mountfs()
+{
+	local type="$1" source="$2" target="$3" opts="$4" msg
+	msg="mounting $type on $target with $opts"
+	if mountpoint -q "$target"; then
+		opts="remount,$opts"
+		msg="re$msg"
+	fi
+	echo "$msg"
+	mount -n -o "$opts" -t "$type" "$source" "$target"
+}
+
+mountfs proc proc /proc 'noexec,nosuid,nodev'
+mountfs tmpfs run /run 'nosuid,nodev,mode=0755,size=10M,strictatime'
+mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
+mountfs sysfs sys /sys 'noexec,nosuid,nodev'
+
+echo 'setting hostname'
+hostname -F /etc/hostname
+
+echo 'loading keymap'
+loadkmap </etc/keymap/keymap.bmap
