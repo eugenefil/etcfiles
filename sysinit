@@ -39,7 +39,9 @@ udevadm trigger --type=subsystems --action=add &
 udevadm trigger --type=devices --action=add &
 
 echo 'setting hostname'
-hostname -F /etc/hostname
+hostname -F /etc/hostname &
 
 echo 'loading keymap'
-loadkmap </etc/keymap/keymap.bmap
+loadkmap </etc/keymap/keymap.bmap &
+
+echo '<1>sysinit done' >/dev/kmsg
