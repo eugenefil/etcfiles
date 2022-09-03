@@ -32,6 +32,9 @@ echo 'seeding crng'
 
 echo 'starting coldplug'
 udevd -d
+# succeeded triggers don't mean successful coldplug, b/c a lot depends
+# on udevd processing uevents in background, but triggers take time,
+# so we don't wait and opportunistically run them in parallel
 udevadm trigger --type=subsystems --action=add &
 udevadm trigger --type=devices --action=add &
 
