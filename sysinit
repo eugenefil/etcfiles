@@ -19,6 +19,22 @@ mountfs tmpfs run /run 'nosuid,nodev,mode=0755,size=10M,strictatime'
 mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
 mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
+# Init crng before udev runs, b/c it uses siphash24 for its hash
+# tables (see src/shared/hashmap.c in eudev source) to generate random
+# hashes and thus prevent hash flooding dos attacks (see
+# https://en.wikipedia.org/wiki/SipHash). SipHash24 requires random
+# 128-bit key which is obtained using getrandom(2) (look in
+# src/shared/hashmap.c for calls to random_bytes(), which is
+# implemented in src/shared/random-util.c via calling dev_urandom()
+# which in turn calls getrandom(2)).
+echo 'seeding crng'
+/lib/rc/sbin/seedrng
+
+echo 'starting coldplug'
+udevd -d
+udevadm trigger --type=subsystems --action=add &
+udevadm trigger --type=devices --action=add &
+
 echo 'setting hostname'
 hostname -F /etc/hostname
 
