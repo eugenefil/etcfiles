@@ -44,4 +44,21 @@ hostname -F /etc/hostname &
 echo 'loading keymap'
 loadkmap </etc/keymap/keymap.bmap &
 
-echo '<1>sysinit done' >/dev/kmsg
+net()
+{
+	# ifup doesn't check iface existence before running its
+	# configure commands and udevd might not have registered iface
+	# yet, so we wait for it to appear
+	while ! [ -e /sys/class/net/eth0 ]; do
+		sleep 1
+	done
+	# dhcp requires AF_PACKET to send raw packets (see packet(7))
+	modprobe -a af_packet ipv6
+	ifup -a
+}
+echo 'starting network'
+net &
+
+# set KERN_EMERG==0 msg level, so it's always printed on console even
+# when "quiet" param was passed to kernel
+echo '<0>sysinit done' >/dev/kmsg
