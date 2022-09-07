@@ -43,6 +43,13 @@ modules()
 {
 	echo 'loading modules'
 	modprobe -a $netmodules
+
+	# sysctl sets ipv6 params, so do after module loading
+	echo 'running sysctl'
+	for f in /lib/sysctl.d/*.conf /etc/sysctl.d/*.conf \
+				      /etc/sysctl.conf; do
+		[ -f "$f" ] && sysctl -q -p "$f"
+	done
 }
 # dhcp requires af_packet (see packet(7)) to send raw packets
 netmodules='af_packet ipv6'
