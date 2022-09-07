@@ -57,22 +57,6 @@ loadkmap </etc/keymap/keymap.bmap &
 echo 'starting syslogd'
 syslogd -t &
 
-wait_modules_go_live()
-{
-	local mods state path
-	while [ $# -gt 0 ]; do
-		mods=
-		for m; do
-			path=/sys/module/$m/initstate
-			[ -e $path ] && read state <$path || state=
-			[ "$state" != live ] && mods="$mods $m"
-		done
-		[ -z "$mods" ] && return
-		sleep 1
-		set -- $mods
-	done
-}
-
 net()
 {
 	echo 'starting network'
@@ -82,7 +66,6 @@ net()
 	while ! [ -e /sys/class/net/eth0 ]; do
 		sleep 1
 	done
-	wait_modules_go_live $netmodules
 	ifup -a
 	ntpd -N -p pool.ntp.org
 }
