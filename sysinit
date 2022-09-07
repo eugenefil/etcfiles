@@ -39,6 +39,15 @@ udevd -d
 udevadm trigger --type=subsystems --action=add &
 udevadm trigger --type=devices --action=add &
 
+modules()
+{
+	echo 'loading modules'
+	modprobe -a $netmodules
+}
+# dhcp requires af_packet (see packet(7)) to send raw packets
+netmodules='af_packet ipv6'
+modules &
+
 echo 'setting hostname'
 hostname -F /etc/hostname &
 
@@ -48,20 +57,35 @@ loadkmap </etc/keymap/keymap.bmap &
 echo 'starting syslogd'
 syslogd -t &
 
+wait_modules_go_live()
+{
+	local mods state path
+	while [ $# -gt 0 ]; do
+		mods=
+		for m; do
+			path=/sys/module/$m/initstate
+			[ -e $path ] && read state <$path || state=
+			[ "$state" != live ] && mods="$mods $m"
+		done
+		[ -z "$mods" ] && return
+		sleep 1
+		set -- $mods
+	done
+}
+
 net()
 {
+	echo 'starting network'
 	# ifup doesn't check iface existence before running its
 	# configure commands and udevd might not have registered iface
 	# yet, so we wait for it to appear
 	while ! [ -e /sys/class/net/eth0 ]; do
 		sleep 1
 	done
-	# dhcp requires AF_PACKET to send raw packets (see packet(7))
-	modprobe -a af_packet ipv6
+	wait_modules_go_live $netmodules
 	ifup -a
 	ntpd -N -p pool.ntp.org
 }
-echo 'starting network'
 net &
 
 # set KERN_EMERG==0 msg level, so it's always printed on console even
