@@ -16,6 +16,7 @@ mountfs()
 
 mountfs proc proc /proc 'noexec,nosuid,nodev'
 mountfs tmpfs run /run 'nosuid,nodev,mode=0755,size=10M,strictatime'
+mountfs tmpfs tmp /tmp 'nosuid,nodev'
 mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
 mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
@@ -44,6 +45,9 @@ hostname -F /etc/hostname &
 echo 'loading keymap'
 loadkmap </etc/keymap/keymap.bmap &
 
+echo 'starting syslogd'
+syslogd -t &
+
 net()
 {
 	# ifup doesn't check iface existence before running its
@@ -55,6 +59,7 @@ net()
 	# dhcp requires AF_PACKET to send raw packets (see packet(7))
 	modprobe -a af_packet ipv6
 	ifup -a
+	ntpd -N -p pool.ntp.org
 }
 echo 'starting network'
 net &
