@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# whether we fail or not, init will continue shutdown, so run commands
+# on a best effort basis w/out `set -e'
+set -u
+
+# kill(1) is a shell built-in and on linux kill(-1, sig) doesn't kill
+# the sender (see kill(2) and kill_something_info() in kernel/signal.c
+# which kill(2) calls), so we kill all except our shell and pid 1
+echo 'sending TERM to all processes'
+kill -TERM -1
+sleep 1
+
+# Note, that our output goes to console (i.e. /dev/<tty> from
+# "console=<tty>" kernel param or /dev/console by default) which we
+# inherited from init that forked us. If there was a session leader on
+# the console (e.g. getty/login spawned by init) that had console as
+# its controlling terminal, then terminating the leader invoked tty
+# hangup (see disassociate_ctty() in drivers/tty/tty_jobctrl.c called
+# by do_exit() in kernel/exit.c). TTY hangup cripples opened console
+# fds, such that reading/writing returns EIO (see __tty_hangup() and
+# hung_up_tty_fops in drivers/tty/tty_io.c). That includes our fds and
+# those of init, so we won't see further messages on the console and
+# need to guard against failure of writing to stdout. The default
+# /dev/console however can't be controlling terminal (b/c its maj:min
+# is TTYAUX_MAJOR:1, see tty_open() in drivers/tty/tty_io.c). Thus
+# unless we pass the "console=<tty>" kernel param and spawn session
+# leader that grabs it as ctty, tty hangup does not occur.
+echo 'sending KILL to all processes'
+kill -KILL -1
+
+echo 'unmounting filesystems'
+umount -n -a -r -v
