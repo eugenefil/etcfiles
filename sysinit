@@ -20,6 +20,16 @@ mountfs tmpfs tmp /tmp 'nosuid,nodev'
 mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
 mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
+# if we fail somewhere along the way and exit prematurely, init will
+# still run getty, so load keymap and set hostname early or we may end
+# up with "(none) login:" getty prompt and non-comfy default keymap
+echo 'loading keymap'
+loadkmap </etc/keymap/keymap.bmap &
+# keymap loading may finish after getty is started, but hostname must
+# be set before, so do it synchronously (it's fast)
+echo 'setting hostname'
+hostname -F /etc/hostname
+
 # Init crng before udev runs, b/c it uses siphash24 for its hash
 # tables (see src/shared/hashmap.c in eudev source) to generate random
 # hashes and thus prevent hash flooding dos attacks (see
@@ -52,20 +62,13 @@ modules()
 	echo 'running sysctl'
 	for f in /lib/sysctl.d/*.conf /etc/sysctl.d/*.conf \
 				      /etc/sysctl.conf; do
-		[ -f "$f" ] && sysctl -q -p "$f"
+		[ -f "$f" ] || continue
+		sysctl -q -p "$f"
 	done
 }
 # dhcp requires af_packet (see packet(7)) to send raw packets
 netmodules='af_packet ipv6'
 modules &
-
-echo 'loading keymap'
-loadkmap </etc/keymap/keymap.bmap &
-
-# if fsck fails and we exit, init will run getty next and it shows
-# hostname, so set hostname now synchronously (it's fast)
-echo 'setting hostname'
-hostname -F /etc/hostname
 
 echo 'running fsck'
 # make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
