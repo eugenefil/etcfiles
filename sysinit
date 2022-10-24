@@ -56,9 +56,10 @@ udevadm trigger --type=devices --action=add &
 modules()
 {
 	echo 'loading modules'
-	modprobe -a $netmodules
+	# dhcp requires af_packet (see packet(7)) to send raw packets
+	modprobe -a af_packet ipv6
 
-	# sysctl sets ipv6 params, so do after module loading
+	# sysctl sets ipv6 params, so run after module loading
 	echo 'running sysctl'
 	for f in /lib/sysctl.d/*.conf /etc/sysctl.d/*.conf \
 				      /etc/sysctl.conf; do
@@ -66,8 +67,6 @@ modules()
 		sysctl -q -p "$f"
 	done
 }
-# dhcp requires af_packet (see packet(7)) to send raw packets
-netmodules='af_packet ipv6'
 modules &
 
 echo 'running fsck'
@@ -109,9 +108,6 @@ net()
 	ntpd -N -p pool.ntp.org
 }
 net &
-
-echo 'mounting local filesystems'
-mount -n -a
 
 # set KERN_EMERG==0 msg level, so it's always printed on console even
 # when "quiet" param was passed to kernel
