@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# whether we fail or not, init will continue shutdown, so run commands
-# on a best effort basis w/out `set -e'
+# Even if we fail, init continues shutdown. Also even echo may fail
+# here (see below). So run on a best effort basis w/out `set -e'.
 set -u
 
 # kill(1) is a shell built-in and on linux kill(-1, sig) doesn't kill
@@ -21,7 +21,7 @@ sleep 1
 # fds, such that reading/writing returns EIO (see __tty_hangup() and
 # hung_up_tty_fops in drivers/tty/tty_io.c). That includes our fds and
 # those of init, so we won't see further messages on the console and
-# need to guard against failure of writing to stdout. The default
+# can expect failures when writing to stdout/stderr. The default
 # /dev/console however can't be controlling terminal (b/c its maj:min
 # is TTYAUX_MAJOR:1, see tty_open() in drivers/tty/tty_io.c). Thus
 # unless we pass the "console=<tty>" kernel param and spawn session
