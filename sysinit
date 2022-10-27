@@ -105,7 +105,10 @@ net()
 		sleep 1
 	done
 	ifup -a
-	ntpd -N -p pool.ntp.org
+	# kill udhcpc after obtaining ip, send SIGKILL b/c udhcpc
+	# releases ip on SIGTERM if -R was supplied (it is on alpine)
+	pkill -9 udhcpc
+	ntpd -n -q -d -p pool.ntp.org
 }
 net &
 
