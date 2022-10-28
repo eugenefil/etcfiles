@@ -22,7 +22,8 @@ mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
 # if we fail somewhere along the way and exit prematurely, init will
 # still run getty, so load keymap and set hostname early or we may end
-# up with "(none) login:" getty prompt and non-comfy default keymap
+# up with "(none) login: " getty prompt (default hostname "(none)" is
+# controlled by CONFIG_DEFAULT_HOSTNAME) and non-comfy default keymap
 echo 'loading keymap'
 loadkmap </etc/keymap/keymap.bmap &
 # keymap loading may finish after getty is started, but hostname must
