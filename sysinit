@@ -56,16 +56,23 @@ udevadm trigger --type=devices --action=add &
 
 modules()
 {
-	echo 'loading modules'
-	# dhcp requires af_packet (see packet(7)) to send raw packets
-	modprobe -a af_packet ipv6
+	local mod
+	# On vanilla alpine /etc/modules contains: af_packet, ipv6.
+	# udhcpc needs af_packet (see packet(7)) to send raw packets.
+	if [ -f /etc/modules ]; then
+		echo 'loading modules'
+		sed 's/#.*//; /^[[:space:]]*$/d' /etc/modules |
+			while read mod; do
+				modprobe $mod
+			done
+	fi
 
 	# sysctl sets ipv6 params, so run after module loading
 	echo 'running sysctl'
 	for f in /lib/sysctl.d/*.conf /etc/sysctl.d/*.conf \
 				      /etc/sysctl.conf; do
 		[ -f "$f" ] || continue
-		sysctl -q -p "$f"
+		sysctl -e -q -p "$f"
 	done
 }
 modules &
