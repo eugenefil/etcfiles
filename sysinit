@@ -18,6 +18,8 @@ mountfs proc proc /proc 'noexec,nosuid,nodev'
 mountfs tmpfs run /run 'nosuid,nodev,mode=0755,size=10M,strictatime'
 mountfs tmpfs tmp /tmp 'nosuid,nodev,mode=1777'
 mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
+[ -d /dev/pts ] || mkdir -m 755 /dev/pts
+mountfs devpts devpts /dev/pts 'gid=5,mode=0620,noexec,nosuid'
 mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
 # if we fail somewhere along the way and exit prematurely, init will
