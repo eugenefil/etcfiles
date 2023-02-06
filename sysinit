@@ -64,20 +64,6 @@ modules()
 }
 modules &
 
-echo 'running fsck'
-# make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
-# when it can't exec fsck.<fstype> program (it prints error though,
-# see _void_ execute() in e2fsprogs/fsck.c), util-linux fsck is fine
-if ! command -v fsck.ext4 >/dev/null; then
-	echo 'fsck.ext4 not found'
-	exit 1
-fi
-ret=0
-fsck -T -A -P -p || ret=$?
-# if check was ok or errors were corrected, then continue, otherwise
-# stop (see fsck return codes in fsck(8))
-[ $ret -lt 2 ] || exit 1
-
 echo 'starting syslogd'
 # log to shmem buffer (read with logread) instead of /var/log/messages
 syslogd -t -C4096 &
@@ -101,6 +87,23 @@ net()
 	ntpd -n -q -d -p pool.ntp.org
 }
 net &
+
+echo 'running fsck'
+# make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
+# when it can't exec fsck.<fstype> program (it prints error though,
+# see _void_ execute() in e2fsprogs/fsck.c), util-linux fsck is fine
+if ! command -v fsck.ext4 >/dev/null; then
+	echo 'fsck.ext4 not found'
+	exit 1
+fi
+ret=0
+fsck -T -A -P -p || ret=$?
+# if check was ok or errors were corrected, then continue, otherwise
+# stop (see fsck return codes in fsck(8))
+[ $ret -lt 2 ] || exit 1
+
+echo 'mounting local filesystems'
+mount -a
 
 # set KERN_EMERG==0 msg level, so it's always printed on console even
 # when "quiet" param was passed to kernel
