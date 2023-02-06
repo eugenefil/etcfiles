@@ -78,13 +78,9 @@ fsck -T -A -P -p || ret=$?
 # stop (see fsck return codes in fsck(8))
 [ $ret -lt 2 ] || exit 1
 
-# root must be mounted rw before starting 1) syslogd, b/c it appends
-# to /var/log/messages, 2) ifup, b/c udhcpc writes to /etc/resolv.conf
-echo 'remounting root rw'
-mount -n -o remount,rw /
-
 echo 'starting syslogd'
-syslogd -t &
+# log to shmem buffer (read with logread) instead of /var/log/messages
+syslogd -t -C4096 &
 
 net()
 {
@@ -95,9 +91,12 @@ net()
 	while ! [ -e /sys/class/net/eth0 ]; do
 		sleep 1
 	done
+	# note, /etc/udhcpc/udhcpc.conf must set RESOLV_CONF to e.g.
+	# /run/resolv.conf and /etc/resolv.conf must be a symlink to it
+	# otherwise udhcpc tries to write /etc/resolv.conf on ro fs
 	ifup -a
 	# kill udhcpc after obtaining ip, send SIGKILL b/c udhcpc
-	# releases ip on SIGTERM if -R was supplied (it is on alpine)
+	# releases ip on SIGTERM if -R was supplied (the default)
 	pkill -9 udhcpc
 	ntpd -n -q -d -p pool.ntp.org
 }
