@@ -20,6 +20,8 @@ mountfs tmpfs tmp /tmp 'nosuid,nodev,mode=1777'
 mountfs devtmpfs dev /dev 'noexec,nosuid,mode=0755,size=10M'
 [ -d /dev/pts ] || mkdir -m 755 /dev/pts
 mountfs devpts devpts /dev/pts 'gid=5,mode=0620,noexec,nosuid'
+[ -d /dev/shm ] || mkdir -m 755 /dev/shm
+mountfs tmpfs shm /dev/shm 'noexec,nosuid,nodev,mode=1777'
 mountfs sysfs sys /sys 'noexec,nosuid,nodev'
 
 # if we fail somewhere along the way and exit prematurely, init will
