@@ -88,6 +88,9 @@ net()
 }
 net &
 
+# initramfs mounts /boot, unmount for fsck check
+umount /boot
+
 echo 'running fsck'
 # make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
 # when it can't exec fsck.<fstype> program (it prints error though,
