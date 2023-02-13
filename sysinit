@@ -87,6 +87,12 @@ net()
 	# releases ip on SIGTERM if -R was supplied (the default)
 	pkill -9 udhcpc
 	ntpd -n -q -d -p pool.ntp.org
+
+	# everything is up, run scripts from /etc/run.d
+	for f in /etc/run.d/*; do
+		[ -x "$f" ] || continue
+		"$f" &
+	done
 }
 net &
 
