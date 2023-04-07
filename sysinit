@@ -96,8 +96,9 @@ net()
 }
 net &
 
-# initramfs mounts /boot, unmount for fsck check
-umount /boot
+# pmos initramfs mounts /boot rw, unmount it for fsck check, but don't
+# die if /boot is not mounted, b/c we may also boot w/out initramfs
+umount /boot 2>/dev/null || :
 
 echo 'running fsck'
 # make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
