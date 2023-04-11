@@ -96,26 +96,56 @@ net()
 }
 net &
 
-# pmos initramfs mounts /boot rw, unmount it for fsck check, but don't
-# die if /boot is not mounted, b/c we may also boot w/out initramfs
-umount /boot 2>/dev/null || :
+wait_fstab_devices() {
+	grep -Eo '^[^#[:space:]]+' /etc/fstab |
+		while read dev; do
+			n=5
+			while true; do
+				# if dev is a node path, check node exists
+				if [ "${dev#/*}" = "" ]; then
+					[ -e "$dev" ] && break
+				else # check findfs can find dev node
+					findfs "$dev" >/dev/null 2>&1 && break
+				fi
+				if [ $n -eq 0 ]; then
+					echo "<3>$dev not found" >/dev/kmsg
+					return 1
+				fi
+				n=$((--n))
+				sleep 1
+			done
+		done
+}
 
-echo 'running fsck'
-# make sure fsck.ext4 exists, b/c busybox fsck doesn't return error
-# when it can't exec fsck.<fstype> program (it prints error though,
-# see _void_ execute() in e2fsprogs/fsck.c), util-linux fsck is fine
-if ! command -v fsck.ext4 >/dev/null; then
-	echo 'fsck.ext4 not found'
-	exit 1
-fi
-ret=0
-fsck -T -A -P -p || ret=$?
-# if check was ok or errors were corrected, then continue, otherwise
-# stop (see fsck return codes in fsck(8))
-[ $ret -lt 2 ] || exit 1
+fs() {
+	# pmos initramfs mounts /boot, unmount it (or fsck fails)
+	mountpoint -q /boot && umount /boot
 
-echo 'mounting local filesystems'
-mount -a
+	echo 'running fsck'
+	# make sure fsck.ext4 exists, b/c busybox fsck doesn't return
+	# error when it can't exec fsck.<fstype> program (it prints
+	# error though, see _void_ execute() in e2fsprogs/fsck.c),
+	# util-linux fsck is fine in this respect
+	if ! command -v fsck.ext4 >/dev/null; then
+		echo '<3>fsck.ext4 not found' >/dev/kmsg
+		exit 1
+	fi
+
+	wait_fstab_devices || exit 1
+
+	ret=0
+	fsck -T -A -P -p || ret=$?
+	# if check was ok or errors were corrected, then continue,
+	# otherwise stop (see fsck return codes in fsck(8))
+	if [ $ret -ge 2 ]; then
+		echo "<3>fsck failed: $ret" >/dev/kmsg
+		exit 1
+	fi
+
+	echo 'mounting local filesystems'
+	mount -a
+}
+fs &
 
 # set KERN_EMERG==0 msg level, so it's always printed on console even
 # when "quiet" param was passed to kernel
