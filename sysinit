@@ -144,9 +144,10 @@ fs() {
 
 	echo 'mounting local filesystems'
 	mount -a
+	echo '<3>fs done' >/dev/kmsg
 }
 fs &
 
-# set KERN_EMERG==0 msg level, so it's always printed on console even
-# when "quiet" param was passed to kernel
-echo '<0>sysinit done' >/dev/kmsg
+# use KERN_ERR=3 msg level (see syslog(2)), so it's printed to console
+# even when "quiet" was passed to kernel
+echo '<3>sysinit done' >/dev/kmsg
